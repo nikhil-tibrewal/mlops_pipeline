@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  airflow-webserver:
+    build: ./airflow
+    container_name: airflow-webserver
+    restart: always
+    depends_on:
+      - airflow-scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__CORE__FERNET_KEY=your-fernet-key
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./models:/opt/airflow/models
+      - ./mlruns:/opt/airflow/mlruns
+    ports:
+      - "8080:8080"
+    command: webserver
+
+  airflow-scheduler:
+    build: ./airflow
+    container_name: airflow-scheduler
+    restart: always
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./models:/opt/airflow/models
+      - ./mlruns:/opt/airflow/mlruns
+    command: scheduler
+
+  mlflow-server:
+    build: ./mlflow
+    container_name: mlflow-server
+    restart: always
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server
+      --backend-store-uri /mlflow/mlruns
+      --default-artifact-root /mlflow/mlruns
+      --host 0.0.0.0
+      --port 5000
