@@ -1,0 +1,4 @@
+scikit-learn
+mlflow
+pandas
+apache-airflow==2.7.3
