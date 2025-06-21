@@ -17,7 +17,8 @@ services:
       - ./airflow/models:/opt/airflow/models
       - ./mlruns:/opt/airflow/mlruns
     ports:
-      - "8080:8080"
+      - "8080:8080" # To expose airflow UI
+      - "5001:5001" # To expose mlflow serve API
     command: webserver
 
   airflow-scheduler:
