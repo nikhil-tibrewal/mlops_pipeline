@@ -1,3 +1,8 @@
+# Inside the Docker container, tell Python where the models/ folder is because it’s not in the PYTHONPATH
+import sys
+import os
+sys.path.append('/opt/airflow/models')
+
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from datetime import datetime
