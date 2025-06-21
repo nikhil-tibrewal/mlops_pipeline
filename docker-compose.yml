@@ -41,6 +41,7 @@ services:
     build: ./mlflow
     container_name: mlflow-server
     restart: always
+    user: "50000:0" # Run as airflow user
     volumes:
       - mlruns:/mlflow/mlruns
     ports:
