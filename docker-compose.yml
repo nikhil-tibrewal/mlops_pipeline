@@ -7,6 +7,7 @@ services:
     container_name: airflow-webserver
     restart: always
     depends_on:
+      - volume-init
       - airflow-scheduler
     environment:
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
@@ -68,6 +69,15 @@ services:
       --no-conda
       --host 0.0.0.0
       --port 5001
+
+  # A short-lived init service that waits for the mlruns_vol volume to be mounted, creates any needed directories and sets ownership to airflow.
+  volume-init:
+    image: busybox
+    volumes:
+      - mlruns:/mlflow/mlruns
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["mkdir -p /mlflow/mlruns && touch /mlflow/mlruns/.init && chown -R 50000:0 /mlflow/mlruns"]
+
 volumes:
   airflow_db:
   mlruns:
