@@ -16,7 +16,7 @@ services:
       - airflow_db:/opt/airflow
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/models:/opt/airflow/models
-      - ./mlruns:/opt/airflow/mlruns
+      - ./mlruns:/mlflow/mlruns
     ports:
       - "8080:8080" # To expose airflow UI
     command: webserver
@@ -32,7 +32,7 @@ services:
       - airflow_db:/opt/airflow
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/models:/opt/airflow/models
-      - ./mlruns:/opt/airflow/mlruns
+      - ./mlruns:/mlflow/mlruns
     command: scheduler
 
   # Tracking UI, experiment logs
