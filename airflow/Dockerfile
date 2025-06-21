@@ -5,5 +5,3 @@ USER airflow
 
 # Install your Python dependencies as the airflow user.
 RUN pip install --no-cache-dir scikit-learn mlflow
-
-COPY ./models /opt/airflow/models
