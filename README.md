@@ -57,6 +57,7 @@ mlops_pipeline/
 
 ### 🐳 Docker Compose
 - Wires up all containers with correct ports, volumes, and environment variables
+- `Dockerfile` is like a recipe for baking your software environment into a standalone image. `docker-compose` is like a kitchen manager: it reads your recipes (Dockerfiles) and tells all the cooks (containers) when and how to work together.
 
 ---
 
@@ -65,7 +66,7 @@ mlops_pipeline/
 ### 1. ✅ Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/mlops_pipeline.git
+git clone https://github.com/nikhil-tibrewal/mlops_pipeline.git
 cd mlops_pipeline
 ```
 
@@ -83,6 +84,8 @@ This is required for Airflow to encrypt secrets.
 docker compose build --no-cache
 docker compose up
 ```
+
+The `--no-cache` option can be omitted to re-use previously built layers.
 
 This will:
 - 🔨 **Build 2 Docker images** using the `Dockerfile` in the `airflow/` and `mlflow/` folders.
