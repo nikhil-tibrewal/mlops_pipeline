@@ -24,13 +24,13 @@ dag = DAG(
 
 train_task = PythonOperator(
     task_id="train_model",
-    python_callable=train_model.run_training,
+    python_callable=run_training,
     dag=dag,
 )
 
 deploy_task = PythonOperator(
     task_id="deploy_model",
-    python_callable=serve_model.run_serve,
+    python_callable=run_serve,
     dag=dag,
 )
 
