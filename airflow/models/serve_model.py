@@ -2,6 +2,7 @@ import os
 import mlflow
 import subprocess
 from mlflow.tracking import MlflowClient
+import logging
 
 def run_serve():
     """
@@ -9,6 +10,8 @@ def run_serve():
     fetches the latest logged model from experiment 0,
     and serves it as a REST API using mlflow.models.serve.
     """
+    logger = logging.getLogger("airflow.task")
+
     # Initialize the MLflow client
     client = MlflowClient()
 
@@ -31,15 +34,21 @@ def run_serve():
 
     # Serve the model on specified port (default: 5001)
     port = os.getenv("MODEL_PORT", "5001")
-    print(f"Serving model from {model_uri} on port {port}...")
+    logger.info(f"Serving model from {model_uri} on port {port}...")
 
     # Use Popen to persist the server beyond Airflow’s Python process
-    proc = subprocess.Popen(
+        proc = subprocess.Popen(
         ["mlflow", "models", "serve", "-m", model_uri, "-p", port, "--no-conda"],
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.STDOUT,
+        text=True
     )
 
-    stdout, stderr = proc.communicate(timeout=10)
-    print("STDOUT:", stdout.decode())
-    print("STDERR:", stderr.decode())
+    # Optional: tail a few lines before exiting the task
+    for _ in range(5):
+        line = proc.stdout.readline()
+        if not line:
+            break
+        logger.info(line.strip())
+
+    logger.info("MLflow serve launched in background.")
