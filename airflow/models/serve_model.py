@@ -34,8 +34,12 @@ def run_serve():
     print(f"Serving model from {model_uri} on port {port}...")
 
     # Use Popen to persist the server beyond Airflow’s Python process
-    subprocess.Popen(
+    proc = subprocess.Popen(
         ["mlflow", "models", "serve", "-m", model_uri, "-p", port, "--no-conda"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
     )
+
+    stdout, stderr = proc.communicate(timeout=10)
+    print("STDOUT:", stdout.decode())
+    print("STDERR:", stderr.decode())
