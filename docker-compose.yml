@@ -52,7 +52,6 @@ services:
       --default-artifact-root /mlflow/mlruns
       --host 0.0.0.0
       --port 5000
-      --serve-artifacts
 
   # Serves trained model as REST API
   model-server:
@@ -67,7 +66,7 @@ services:
       - mlruns:/mlflow/mlruns
     command: >
       mlflow models serve
-      -m runs:/${LATEST_RUN_ID}/model
+      -m runs:/${LATEST_MODEL_RUN_ID}/model
       --no-conda
       --host 0.0.0.0
       --port 5001

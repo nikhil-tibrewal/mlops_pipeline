@@ -21,6 +21,6 @@ RUN_ID=$(curl -s http://localhost:5000/api/2.0/mlflow/runs/search \
 
 # Step 4: Overwrite .env with updated variables
 echo "FERNET_KEY=$FERNET_KEY" > "$ENV_FILE"
-echo "MODEL_RUN_ID=$RUN_ID" >> "$ENV_FILE"
+echo "LATEST_MODEL_RUN_ID=$RUN_ID" >> "$ENV_FILE"
 
 echo "✅ Updated .env with latest run ID: $RUN_ID"
