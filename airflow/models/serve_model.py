@@ -1,5 +1,6 @@
 import os
 import mlflow
+import subprocess
 from mlflow.tracking import MlflowClient
 
 def run_serve():
