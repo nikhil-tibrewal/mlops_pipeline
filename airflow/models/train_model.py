@@ -21,6 +21,11 @@ def run_training():
     acc = accuracy_score(y_test, preds)
     print(f"Accuracy: {acc}")
 
+    # Ensure default experiment exists
+    if not mlflow.get_experiment_by_name("default"):
+        mlflow.create_experiment("default")
+    mlflow.set_experiment("default")
+
     # Log to MLflow
     with mlflow.start_run() as run:
         mlflow.log_param("n_estimators", 100)
