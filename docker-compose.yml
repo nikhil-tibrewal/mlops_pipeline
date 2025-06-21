@@ -14,7 +14,7 @@ services:
     volumes:
       - airflow_db:/opt/airflow
       - ./airflow/dags:/opt/airflow/dags
-      - ./models:/opt/airflow/models
+      - ./airflow/models:/opt/airflow/models
       - ./mlruns:/opt/airflow/mlruns
     ports:
       - "8080:8080"
@@ -30,7 +30,7 @@ services:
     volumes:
       - airflow_db:/opt/airflow
       - ./airflow/dags:/opt/airflow/dags
-      - ./models:/opt/airflow/models
+      - ./airflow/models:/opt/airflow/models
       - ./mlruns:/opt/airflow/mlruns
     command: scheduler
 
