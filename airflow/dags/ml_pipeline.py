@@ -7,7 +7,6 @@ from airflow.operators.python_operator import PythonOperator
 from datetime import datetime
 import logging
 from train_model import run_training
-from serve_model import run_serve
 
 default_args = {
     "owner": "airflow",
@@ -17,7 +16,7 @@ default_args = {
 dag = DAG(
     "mlops_pipeline",
     default_args=default_args,
-    description="Train and serve model using MLflow",
+    description="Train model using MLflow",
     schedule_interval=None,
     catchup=False,
 )
@@ -28,10 +27,4 @@ train_task = PythonOperator(
     dag=dag,
 )
 
-deploy_task = PythonOperator(
-    task_id="deploy_model",
-    python_callable=run_serve,
-    dag=dag,
-)
-
-train_task >> deploy_task
+train_task

@@ -76,7 +76,7 @@ cd mlops_pipeline
 python3 -c "from cryptography.fernet import Fernet; print('FERNET_KEY=' + Fernet.generate_key().decode())" > .env
 ```
 
-This is required for Airflow to encrypt secrets.
+This is required for Airflow to encrypt secrets. We also need a `LATEST_MODEL_RUN_ID` here, but we'll add that later.
 
 ### 3. ✅ Build and Start All Containers
 
