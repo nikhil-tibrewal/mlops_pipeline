@@ -14,9 +14,9 @@ services:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
     volumes:
       - airflow_db:/opt/airflow
+      - mlruns:/mlflow/mlruns
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/models:/opt/airflow/models
-      - ./mlruns:/mlflow/mlruns
     ports:
       - "8080:8080" # To expose airflow UI
     command: webserver
@@ -30,9 +30,9 @@ services:
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
     volumes:
       - airflow_db:/opt/airflow
+      - mlruns:/mlflow/mlruns
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/models:/opt/airflow/models
-      - ./mlruns:/mlflow/mlruns
     command: scheduler
 
   # Tracking UI, experiment logs
@@ -41,7 +41,7 @@ services:
     container_name: mlflow-server
     restart: always
     volumes:
-      - ./mlruns:/mlflow/mlruns
+      - mlruns:/mlflow/mlruns
     ports:
       - "5000:5000"
     command: >
@@ -61,7 +61,7 @@ services:
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow-server:5000
     volumes:
-      - ./mlruns:/mlflow/mlruns
+      - mlruns:/mlflow/mlruns
     command: >
       mlflow models serve
       -m runs:/16e97ba25e664c24b842ca3e09ac79ed/model
@@ -70,3 +70,4 @@ services:
       --port 5001
 volumes:
   airflow_db:
+  mlruns:
