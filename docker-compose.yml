@@ -9,7 +9,7 @@ services:
       - airflow-scheduler
     environment:
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
-      - AIRFLOW__CORE__FERNET_KEY=your-fernet-key
+      - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -24,6 +24,7 @@ services:
     container_name: airflow-scheduler
     restart: always
     environment:
+      - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
     volumes:
       - ./airflow/dags:/opt/airflow/dags
