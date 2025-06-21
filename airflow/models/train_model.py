@@ -34,7 +34,6 @@ def run_training():
         mlflow.log_param("n_estimators", 100)
         mlflow.log_param("max_depth", 3)
         mlflow.log_metric("accuracy", acc)
-        import mlflow
         print("Tracking URI:", mlflow.get_tracking_uri())
         print("Artifact URI:", mlflow.get_artifact_uri())
         mlflow.sklearn.log_model(clf, artifact_path="model")
