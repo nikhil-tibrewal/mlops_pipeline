@@ -32,5 +32,9 @@ def run_serve():
     port = os.getenv("MODEL_PORT", "5001")
     print(f"Serving model from {model_uri} on port {port}...")
 
-    # Launch model serving (non-blocking)
-    os.system(f"mlflow models serve -m {model_uri} -p {port} --no-conda &")
+    # Use Popen to persist the server beyond Airflow’s Python process
+    subprocess.Popen(
+        ["mlflow", "models", "serve", "-m", model_uri, "-p", port, "--no-conda"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
