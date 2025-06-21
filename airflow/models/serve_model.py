@@ -11,9 +11,12 @@ def run_serve():
     # Initialize the MLflow client
     client = MlflowClient()
 
-    # Search for the latest run from the default experiment (ID 0)
+    # Search for the latest run from the default experiment
+    experiment = client.get_experiment_by_name("default")
+    if experiment is None:
+        raise Exception("Experiment 'default' not found.")
     runs = client.search_runs(
-        experiment_ids=["0"],
+        experiment_ids=[experiment.experiment_id],
         order_by=["start_time DESC"],
         max_results=1
     )
