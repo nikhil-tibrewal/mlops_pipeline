@@ -84,6 +84,31 @@ docker compose build --no-cache
 docker compose up
 ```
 
+This will:
+- 🔨 **Build 2 Docker images** using the `Dockerfile` in the `airflow/` and `mlflow/` folders.
+  - `airflow/Dockerfile` installs Airflow, scikit-learn, mlflow
+  - `mlflow/Dockerfile` installs a minimal Python + MLflow environment
+- 📦 **Start 3 containers**:
+  - `airflow-webserver` — the Airflow UI and DAG loader
+  - `airflow-scheduler` — triggers tasks like training and serving
+  - `mlflow-server` — hosts the MLflow UI and tracking backend
+  - The 2 airflow services use the same image
+- 🗂️ **Mount local folders as volumes** into the containers:
+  - `./airflow/dags → /opt/airflow/dags`
+  - `./airflow/models → /opt/airflow/models`
+  - `./mlruns → /opt/airflow/mlruns` and `/mlflow/mlruns` for shared model storage
+  - Mounting is helpful because Docker images don’t need to be rebuilt when code is changed
+
+The Airflow DAG (`ml_pipeline.py`) does the following when triggered:
+- **Training Task** (`train_model.py`)
+  - Loads Iris dataset and trains a `RandomForestClassifier`
+  - Logs parameters, metrics, and the model to MLflow
+  - MLflow saves the model under the local `mlruns/` directory
+- **Serving Task** (`serve_model.py`)
+  - Queries MLflow for the latest successful run
+  - Uses `mlflow models serve` to launch a REST API from that model
+  - The API runs on port `5001` and accepts POST requests for inference
+
 ---
 
 ### 4. ✅ Initialize Airflow Metadata DB
