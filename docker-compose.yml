@@ -66,7 +66,7 @@ services:
       - mlruns:/mlflow/mlruns
     command: >
       mlflow models serve
-      -m runs:/16e97ba25e664c24b842ca3e09ac79ed/model
+      -m runs:/4c3a05dbce4840ad8c05f66bd9ba67b4/model
       --no-conda
       --host 0.0.0.0
       --port 5001
