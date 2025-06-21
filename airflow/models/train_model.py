@@ -21,6 +21,12 @@ def run_training():
     acc = accuracy_score(y_test, preds)
     print(f"Accuracy: {acc}")
 
+    # Set MLflow tracking and artifact location
+    # Track to the mlflow server, same as in docker-compose.yml
+    mlflow.set_tracking_uri("http://mlflow-server:5000")
+    # Match model-server volume path, same as in docker-compose.yml
+    mlflow.set_artifact_uri("/mlflow/mlruns")
+
     # Ensure default experiment exists
     if not mlflow.get_experiment_by_name("default"):
         mlflow.create_experiment("default")
