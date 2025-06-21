@@ -12,6 +12,7 @@ services:
       - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
     volumes:
+      - airflow_db:/opt/airflow
       - ./airflow/dags:/opt/airflow/dags
       - ./models:/opt/airflow/models
       - ./mlruns:/opt/airflow/mlruns
@@ -27,6 +28,7 @@ services:
       - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
     volumes:
+      - airflow_db:/opt/airflow
       - ./airflow/dags:/opt/airflow/dags
       - ./models:/opt/airflow/models
       - ./mlruns:/opt/airflow/mlruns
