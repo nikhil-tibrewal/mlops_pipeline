@@ -16,13 +16,15 @@ I used ChatGPT as a coding assistant in creating this.
 
 ```mermaid
 graph TD
-  subgraph Docker Host
-    A[Airflow Webserver] -->|UI + DAG parsing| B[Airflow Scheduler]
-    B -->|Triggers| C[train_model.py]
-    C -->|Logs| D[MLflow Tracking Server]
-    D -->|Stores| E[mlruns/]
-    C -->|Model Artifact| F[MLflow Serve API]
-    F -->|/invocations| G[Client Request]
+  subgraph Docker_Host
+    A[Airflow Webserver and UI] -->|Schedules DAGs| B[Airflow Scheduler]
+    B -->|Triggers Task| C[train_model.py in DAG]
+    C -->|Logs metrics and model| D[MLflow Tracking Server]
+    D -->|Persists artifacts to| E[Named Volume: mlruns]
+    G[update_run_id.sh script] -->|Updates| H[.env file]
+    H -->|Injects run ID into| F[Model Server]
+    F -->|Loads model from run:/ID in| E
+    I[Client] -->|POST /invocations| F
   end
 ```
 
@@ -32,15 +34,17 @@ graph TD
 mlops_pipeline/
 ├── airflow/
 │   ├── dags/                # Airflow DAGs
-│   │   └── ml_pipeline.py
-│   └── models/              # Training & serving code
-│       ├── train_model.py
-│       └── serve_model.py
-├── mlruns/                  # MLflow model + metric storage
-├── docker-compose.yml       # Multi-service setup
-├── .env                     # Secrets (Fernet key)
-├── clean_disk.sh            # Optional cleanup script
-└── README.md
+│   │   └── ml_pipeline.py   # Orchestrates model training
+│   ├── models/
+│   │   └── train_model.py   # Handles ML training and logging
+│   └── Dockerfile           # Builds the airflow-webserver & scheduler image
+├── mlflow/
+│   └── Dockerfile           # Installs mlflow and builds the MLFlow images
+├── update_run_id.sh         # Standalone script to fetch latest model run ID
+├── clean_disk.sh            # Removes Docker volumes/images for a fresh start
+├── docker-compose.yml       # Defines services: airflow-webserver, scheduler, mlflow-server, volume-init, model-server
+└── README.md                # Primary documentation (updated with new workflow steps)
+
 ```
 
 ---
@@ -63,6 +67,23 @@ mlops_pipeline/
 
 ## 🛠️ Setup Instructions
 
+### 0. ✅ Setup a GCP VM
+
+Running the whole set up on a GCP VM instance was a lot easier for me. So if you'd like, you can follow these to set up the exact same instance I used for the project.
+
+1. **Create a new VM instance** with the following configuration:
+   - **Machine type**: e2-standard-2
+   - **Boot disk**: Debian 11
+   - **Allow HTTP/HTTPS traffic**
+   - **Disk Size**: 50GB
+   - **Firewall Rule**:
+     - Go to VPC Network → Firewall → Create Firewall Rule
+     - Name: `allow-mlflow`
+     - Targets: All instances in the network
+     - Source IP ranges: `0.0.0.0/0`
+     - Protocols and ports: check TCP and add `5000`, `5001`, `8080`
+     - Save
+
 ### 1. ✅ Clone the Repository
 
 ```bash
@@ -76,41 +97,55 @@ cd mlops_pipeline
 python3 -c "from cryptography.fernet import Fernet; print('FERNET_KEY=' + Fernet.generate_key().decode())" > .env
 ```
 
-This is required for Airflow to encrypt secrets. We also need a `LATEST_MODEL_RUN_ID` here, but we'll add that later.
+This is required for Airflow to encrypt secrets. We also need a `LATEST_MODEL_RUN_ID` here for the `model-server` to startup correctly, but we'll add that later.
 
 ### 3. ✅ Build and Start All Containers
 
 ```bash
+# Stop all containers and remove old volumes
+docker compose down --volumes --remove-orphans
+# Rebuild from clean state
 docker compose build --no-cache
 docker compose up
 ```
 
-The `--no-cache` option can be omitted to re-use previously built layers.
+The `--no-cache` option can be omitted to re-use previously built layers. The `model-server` will fail to startup, but this is expected since we don't have a `LATEST_MODEL_RUN_ID` yet. We will fix that later.
 
 This will:
 - 🔨 **Build 2 Docker images** using the `Dockerfile` in the `airflow/` and `mlflow/` folders.
   - `airflow/Dockerfile` installs Airflow, scikit-learn, mlflow
   - `mlflow/Dockerfile` installs a minimal Python + MLflow environment
-- 📦 **Start 3 containers**:
+- 📦 **Start 5 containers**:
   - `airflow-webserver` — the Airflow UI and DAG loader
   - `airflow-scheduler` — triggers tasks like training and serving
   - `mlflow-server` — hosts the MLflow UI and tracking backend
-  - The 2 airflow services use the same image
+  - `model-server` — the MLFlow serve API backend that serves the REST API for the model
+  - The 2 airflow services use the same image, and the 2 mlflow images use the same image
+  - `volume-init`: a short-lived init service that waits for the `mlruns` volume to be mounted, creates any needed directories and sets ownership to airflow.
+    - Note that the `mlflow-server` is run as the `airflow` user. This is because:
+        - Airflow (webserver + scheduler) runs as user airflow inside the container (UID 50000).
+        - When the Airflow DAG (e.g., `train_model.py`) logs a model with `mlflow.log_model()`, it creates files and directories in `/mlflow/mlruns`.
+        - If `mlflow-server` (the tracking server) is not also run as the same user, we get file permission errors (especially during logging or artifact access), because different UID users can’t write to each other’s files inside shared volumes.
+        - Running as `airflow` ensures that both airflow and mlflow-server can read/write to the same shared mlruns volume, and artifact logging and serving work cleanly.
+    - `volume-init` is needed because:
+        - Docker named volumes (`mlruns:` in this case) are created and mounted empty by default.
+        - We can't assume the `/mlflow/mlruns` path exists on first startup.
+        - `volume-init` creates the directory and a dummy `.init` file inside it
+        - Changes ownership to UID 50000 (the airflow user) using `chown -R`
+        - Ensures that when Airflow or MLflow write artifacts, there are no permission errors
+        - This solves the initial “Permission denied” issues during model logging, especially on fresh setups or rebuilt volumes.
 - 🗂️ **Mount local folders as volumes** into the containers:
   - `./airflow/dags → /opt/airflow/dags`
   - `./airflow/models → /opt/airflow/models`
-  - `./mlruns → /opt/airflow/mlruns` and `/mlflow/mlruns` for shared model storage
   - Mounting is helpful because Docker images don’t need to be rebuilt when code is changed
+  - Named volumed for `mlruns:/mlflow/mlruns` so that it is managed by Docker and shared across containers.
 
 The Airflow DAG (`ml_pipeline.py`) does the following when triggered:
 - **Training Task** (`train_model.py`)
   - Loads Iris dataset and trains a `RandomForestClassifier`
   - Logs parameters, metrics, and the model to MLflow
   - MLflow saves the model under the local `mlruns/` directory
-- **Serving Task** (`serve_model.py`)
-  - Queries MLflow for the latest successful run
-  - Uses `mlflow models serve` to launch a REST API from that model
-  - The API runs on port `5001` and accepts POST requests for inference
+- Other training pipeline related tasks can be added here as necessary.
 
 ---
 
@@ -136,21 +171,37 @@ docker compose run --rm airflow-webserver airflow users create \
   --email admin@example.com
 ```
 
----
-
-## 🚀 Running the Pipeline
+### 6. ✅ Running the Training Pipeline
 
 1. Go to `http://localhost:8080`
 2. Log in with:
    - Username: `admin`
    - Password: `admin`
 3. Trigger the DAG `mlops_pipeline`
-4. Monitor logs to see:
-   - Model trained via `train_model.py`
-   - Logged to MLflow at `http://localhost:5000`
-   - Served via REST API at `http://localhost:5001/invocations`
+4. Wait for pipeline to complete.
+5. Confirm that the MLFlow tracking UI shows the latest run at `http://localhost:5000`
 
-### Example Prediction Call:
+### 7. ✅ Fix `model-server`
+
+Run the following to set the `LATEST_MODEL_RUN_ID` from the host VM. The `docker-compose.yml` file is able to read the `.env` file directly from the project root directly.
+
+```bash
+chmod +x update_run_id.sh
+./update_run_id.sh
+less .env
+```
+
+Ensure that the `.env` file has the `LATEST_MODEL_RUN_ID` and the `FERNET_KEY`. Then restart the `model-server` by running this in another window:
+
+```bash
+docker compose up --build model-server --force-recreate
+```
+
+Go back to the logs of the containers running, and you should see that the `model-server` has started successfully.
+
+### 8. ✅ Example Prediction Call:
+
+Finally, call the `model-server`'s MLFlow REST API to run a prediction based on the model that was just trained.
 
 ```bash
 curl -X POST http://localhost:5001/invocations \

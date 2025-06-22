@@ -71,7 +71,7 @@ services:
       --host 0.0.0.0
       --port 5001
 
-  # A short-lived init service that waits for the mlruns_vol volume to be mounted, creates any needed directories and sets ownership to airflow.
+  # A short-lived init service that waits for the mlruns volume to be mounted, creates any needed directories and sets ownership to airflow.
   volume-init:
     image: busybox
     volumes:
